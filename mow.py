@@ -5,46 +5,64 @@ import time
 import sys
 import argparse
 
+# Script configuration - TODO: Refactor this into a preferences file
+# --------------------
+
+# We want to process files with the following extensions
+sourceFileWildcards = [ '*.java', '*.rb', '*.php', '*.js', '*.scala', '*.c', '*.cpp']
+
+
+
+# Command line options
+# --------------------
+
 epilog = """Some usage examples for mow.py:
 
-	mow.py -mr	# Process modified files recursively
-	mow.py -r	# Process all files recursively
-	mow.py 		# Process files in the current directory
-	mow.py -p README.txt test.cpp # Process the specified two files
+	mow.py -r	# Process all files matching the predefined wildcards in the current and all sub-directories
+	mow.py 		# Process all files matching the predefined wildcards in the current directory
+	mow.py -f README.txt test.cpp	# Process the specified two files
+
+If you installed the git command, you can also do the following:
+
+	git mow		# Process all modified files matching the predefined wildcards
+	git mow -m	# Process all files matching the predefined wildcards
+	git mow -w \*.pl -w \*.mmd # Process all files matching the predefine wildcards and *.pl and *.mmd
 """
 
 
 parser = argparse.ArgumentParser(description='Remove trailing whitespaces from source files', epilog=epilog, formatter_class=argparse.RawTextHelpFormatter)
 
-parser.add_argument('--paths', '-p', dest='paths', nargs='+',
-					help='Specify files or file-wildcards to be processed. If not specified, the default wildcards will be used.')
-
-parser.add_argument('--recursive', '-r', dest='recursive', action='store_true',
-					help='Recursive mode. Git support only works in recursive mode right now!')
-
-parser.add_argument('--force-find', '-f', dest='forceFind', action='store_true',
-					help='Force finding files using the "find" command')
-
-parser.add_argument('--only-modified', '-m', dest='onlyModified', action='store_true',
-					help='When in Git-mode, process only files that have been modified. Implies recursive mode.')
-
-parser.add_argument('--list-wildcards', '-l', dest='listWildcards', action='store_true',
-					help='List source file wildcards which are used to search for files to process')
-
+# Generic options
 parser.add_argument('--debug', dest='debug', action='store_true',
 					help='Enable debug mode')
+parser.add_argument('--wildcard', '-w', dest='wildcards', action='append',
+					help='Add an additional wildcard for source-files to be processed')
+
+# File mode options
+group = parser.add_argument_group('"Specific files"-mode')
+group.add_argument('--files', '-f', dest='files', nargs='+', metavar='FILE',
+					help='Specifies files to be processed.')
+
+# Git mode options
+group = parser.add_argument_group('Git-mode', 'NOTE: Always operates recursively due to a limitation in git ls-files!')
+group.add_argument('--force-git', dest='forceGit', action='store_true')
+group.add_argument('--not-only-modified', '-m', dest='onlyModified', action='store_false',
+					help='Process only files that have been modified')
+
+
+# Find mode options
+group = parser.add_argument_group('Find-mode', 'Find files to process using the "find"-command')
+group.add_argument('--force-find', dest='forceFind', action='store_true')
+
+
+group.add_argument('--recursive', '-r', dest='recursive', action='store_true')
+
+
+
+# Initialization
+# --------------
 
 args = parser.parse_args()
-
-
-# We want to process files with the following extensions
-sourceFileWildcards = [ '*.java', '*.rb', '*.php', '*.js', '*.scala', '*.c', '*.cpp']
-
-if args.listWildcards:
-	print "Wildcards:"
-	for wildcard in sourceFileWildcards:
-		print "    %s" % wildcard
-	exit()
 
 # Ignore subprocess output as explained here:
 # http://mail.python.org/pipermail/python-dev/2006-June/066111.html
@@ -57,94 +75,152 @@ gitRevParse.wait()
 inGitDir = gitRevParse.returncode == 0
 
 
-# Decide what we want to process. If no path was given, use our wildcards
-pathsToProcess = sourceFileWildcards
-if args.paths != None:
-	pathsToProcess = args.paths
+
+# List command generation
+# -----------------------
+
+def gitLsFilesCommand(wildcards, onlyModified=False):
+	command = ["git", "ls-files"]
+
+	if onlyModified:
+		command.append('--modified')
+
+	for wildcard in wildcards:
+		command.append(wildcard)
+
+	return command
 
 
-listFileCommand = [ ]
+def findFilesCommand(wildcards, paths=['.'], recursive=True):
+	command = ["find"]
+	command.extend(paths)
 
-if (args.recursive or args.onlyModified) and inGitDir and not args.forceFind and args.paths == None:
-	print "Git mode :)"
+	command.extend(['-type', 'f'])
 
-	if not args.recursive:
-		print "git ls-files does not support non-recursive mode :( Please use -f or -r"
-		exit()
+	if not recursive:
+		command.extend(['-depth', '1'])
 
-	listFileCommand.extend([ "git", "ls-files" ])
+	command.append('(')
+	for wildcard in wildcards:
+		command.extend(['-name', wildcard, '-or'])
 
-	if args.onlyModified:
-		listFileCommand.append('--modified')
+	command.pop() # Remove the dangling "-or" at the end
+	command.append(')')
 
-	for wildcard in pathsToProcess:
-		listFileCommand.append( "%s" % wildcard )
+	return command
 
 
-elif args.forceFind or args.recursive or args.paths == None:
-	print "Find mode."
+def specificFilesCommand(files):
+	command = ['echo']
 
-	if args.onlyModified:
-		print "Not in a Git repository, so I cannot process only modified files"
-		exit()
+	for file in files:
+		command.append(file)
 
-	listFileCommand.extend([ "find", ".", "-type", "f" ])
-
-	if not args.recursive:
-		listFileCommand.extend(['-depth', '1'])
-
-	listFileCommand.append('(')
-	for wildcard in pathsToProcess:
-		listFileCommand.extend( ["-name", "%s" % wildcard, '-or'] )
-
-	listFileCommand.pop() # Remove the dangling "-or" at the end
-	listFileCommand.append(')')
+	return command
 
 
 
-else:
-	listFileCommand.extend(['echo'])
+# Processing functions
+# --------------------
 
-	for wildcard in pathsToProcess:
-		listFileCommand.extend( [ wildcard, "\n"] )
+def processFiles(files, listFilesCommand, debug=False):
+	sed = None
 
-	listFileCommand.pop() # Remove the dangling newline at the end
+	if(debug):
+		print "Data that would be passed to sed:"
+		sed = subprocess.Popen([ 'cat' ], stdin=subprocess.PIPE)
+	else:
+		sys.stdout.write("Processing files")
+		# Don't remove the empty argument after -i as Mac OS X doesn't allow -i without parameter
+		# http://blog.mpdaugherty.com/2010/05/27/difference-with-sed-in-place-editing-on-mac-os-x-vs-linux/
+		sed = subprocess.Popen([ 'xargs', 'sed', '-i', '', '-e', 's/[[:space:]]*$//' ], stdin=subprocess.PIPE)
+
+	while len(files) > 0:
+		sed.stdin.writelines(files.pop())
+
+		if not debug:
+			sys.stdout.write('.')
+
+	if not debug:
+		print ' Done!'
 
 
-if args.debug:
-	print "Arguments parsed:"
+
+# User interaction functions
+# --------------------
+
+def askProcessFiles(files, listFilesCommand):
+	options = {
+		'y': lambda a, b: processFiles(a, b, args.debug),
+		'n': lambda a, b: exit("Bye!"),
+		'f': lambda a, b: lambdaPrint(a) or True,
+		'c': lambda a, b: lambdaPrint(b) or True,
+		'd': lambda a, b: bool(printDebug(a, b)) ^ bool(processFiles(a, b, True)),
+		'q': lambda a, b: exit("Bye!"),
+		'?': None	# Handled in the eval-loop
+	}
+
+	choice = None
+	while choice == None:
+		sys.stdout.write("\033[1;94m" + "About to process %d files! Continue? [y,n,f,c,q,?] \033[0m" % len(files))
+		choice = raw_input()
+
+		if not choice in options.keys() or choice == '?':
+			choice = None
+			printProcessHelp()
+		else:
+			result = options[choice](files, listFilesCommand)
+			if result: # We continue the loop if the callback functions returns True
+				choice = None
+
+
+def lambdaPrint(x):
+	print x
+
+
+def printDebug(files, listFilesCommand):
+	print "\nArguments as found by argparse:"
 	print args
-	print "Paths being processed:"
-	print pathsToProcess
-	print "List File Command:"
-	print listFileCommand
-	print ""
+
+	print "\nFiles to be processed:"
+	print files
+
+	print "\nCommand that generated the file list:"
+	print listFilesCommand
+
+
+
+def printProcessHelp():
+	print "\033[1;91m" + """y - Start processing files
+n - Abort execution, equivalent to "q"
+f - List files to be processed
+c - Show command used to generate the file list
+d - Print debug information
+q - Abort execution
+? - Print help \033[0m"""
+
+
+
+# Script execution
+# ----------------
+
+listFilesCommand = None
+
+if args.files != None:
+	listFilesCommand = specificFilesCommand(args.files)
+
+elif args.forceGit:
+	if not args.recursive:
+		exit("Git-mode does not currently support non-recursive processing! Exiting.")
+
+	if not inGitDir:
+		exit("Not a git repository (or any of the parent directories)! Exiting.")
+	listFilesCommand = gitLsFilesCommand(sourceFileWildcards, onlyModified=args.onlyModified)
 
 else:
-	sys.stdout.write("Removing trailing spaces.")
+	listFilesCommand = findFilesCommand(sourceFileWildcards, recursive=args.recursive)
 
 
+files = subprocess.Popen(listFilesCommand, stdout=subprocess.PIPE).stdout.readlines()
+askProcessFiles(files, listFilesCommand)
 
-files = subprocess.Popen(listFileCommand, stdout=subprocess.PIPE)
-
-# Don't remove the empty argument after -i as Mac OS X doesn't allow -i without parameter
-# http://blog.mpdaugherty.com/2010/05/27/difference-with-sed-in-place-editing-on-mac-os-x-vs-linux/
-sed = None
-if(args.debug):
-	print "Data that would be passed to sed:"
-	sed = subprocess.Popen([ 'cat' ], stdin=files.stdout)
-else:
-	sed = subprocess.Popen([ 'xargs', 'sed', '-i', '', '-e', 's/[[:space:]]*$//' ], stdin=files.stdout, stdout=FNULL)
-files.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
-
-if args.debug:
-	sed.wait()
-	exit()
-
-sed.poll()
-while sed.returncode == None:
-	sys.stdout.write('.')
-	sed.poll()
-	time.sleep(0.25)
-
-print ' Done!'
