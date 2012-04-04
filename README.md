@@ -6,8 +6,9 @@ trailing-space-free code.
 
 # Installation
 
-Clone the repository (or download it), and put mow.py somewhere in your path. If you're
-using git, you probably want to put `git-mow` there too :)
+Clone the repository ([or download it](https://github.com/x3ro/mow.py/zipball/master),
+and put mow.py somewhere in your path. If you're using git, you probably want to put
+`git-mow` there too :)
 
 
 # Examples
