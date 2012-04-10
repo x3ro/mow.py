@@ -16,7 +16,7 @@ sourceFileWildcards = [ '*.java', '*.rb', '*.php', '*.js', '*.scala', '*.c', '*.
 
 # == Command line options ==
 
-parser = argparse.ArgumentParser(description='Remove trailing whitespaces from source files', epilog=epilog, formatter_class=argparse.RawTextHelpFormatter)
+parser = argparse.ArgumentParser(description='Remove trailing whitespaces from source files', formatter_class=argparse.RawTextHelpFormatter)
 
 # ==== Generic options ====
 parser.add_argument('--debug', dest='debug', action='store_true',
