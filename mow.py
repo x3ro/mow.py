@@ -5,52 +5,38 @@ import time
 import sys
 import argparse
 
-# Script configuration - TODO: Refactor this into a preferences file
-# --------------------
+# == Script configuration ==
 
-# We want to process files with the following extensions
+# TODO: Refactor this into a preferences file
+
+# We want to process files with these extensions.
 sourceFileWildcards = [ '*.java', '*.rb', '*.php', '*.js', '*.scala', '*.c', '*.cpp']
 
 
 
-# Command line options
-# --------------------
-
-epilog = """Some usage examples for mow.py:
-
-	mow.py -r	# Process all files matching the predefined wildcards in the current and all sub-directories
-	mow.py 		# Process all files matching the predefined wildcards in the current directory
-	mow.py -f README.txt test.cpp	# Process the specified two files
-
-If you installed the git command, you can also do the following:
-
-	git mow		# Process all modified files matching the predefined wildcards
-	git mow -m	# Process all files matching the predefined wildcards
-	git mow -w \*.pl -w \*.mmd # Process all files matching the predefine wildcards and *.pl and *.mmd
-"""
-
+# == Command line options ==
 
 parser = argparse.ArgumentParser(description='Remove trailing whitespaces from source files', epilog=epilog, formatter_class=argparse.RawTextHelpFormatter)
 
-# Generic options
+# ==== Generic options ====
 parser.add_argument('--debug', dest='debug', action='store_true',
 					help='Enable debug mode')
 parser.add_argument('--wildcard', '-w', dest='wildcards', action='append',
 					help='Add an additional wildcard for source-files to be processed')
 
-# File mode options
+# ==== File mode options ====
 group = parser.add_argument_group('"Specific files"-mode')
 group.add_argument('--files', '-f', dest='files', nargs='+', metavar='FILE',
 					help='Specifies files to be processed.')
 
-# Git mode options
+# ==== Git mode options ====
 group = parser.add_argument_group('Git-mode', 'NOTE: Always operates recursively due to a limitation in git ls-files!')
 group.add_argument('--force-git', dest='forceGit', action='store_true')
 group.add_argument('--not-only-modified', '-m', dest='onlyModified', action='store_false',
 					help='Process only files that have been modified')
 
 
-# Find mode options
+# ==== Find mode options ====
 group = parser.add_argument_group('Find-mode', 'Find files to process using the "find"-command')
 group.add_argument('--force-find', dest='forceFind', action='store_true')
 
@@ -59,25 +45,27 @@ group.add_argument('--recursive', '-r', dest='recursive', action='store_true')
 
 
 
-# Initialization
-# --------------
+# == Initialization ==
 
 args = parser.parse_args()
 
-# Ignore subprocess output as explained here:
-# http://mail.python.org/pipermail/python-dev/2006-June/066111.html
+# Used to ignore subprocess output as explained
+# [here](http://mail.python.org/pipermail/python-dev/2006-June/066111.html).
 FNULL = open('/dev/null', 'w')
 
 # Are we currently in a directory under Git version control?
-# http://stackoverflow.com/a/2044677/124257
+# [(See Stackoverflow)](http://stackoverflow.com/a/2044677/124257)
 gitRevParse = subprocess.Popen(["git", "rev-parse"], stdout=FNULL, stderr=FNULL)
 gitRevParse.wait()
 inGitDir = gitRevParse.returncode == 0
 
 
 
-# List command generation
-# -----------------------
+# == List command generation ==
+
+# These functions generate the shell commands that will be used to gather
+# a the list of files that should be processed. Only one of them is called,
+# depending on the mode `mow.py` is running in.
 
 def gitLsFilesCommand(wildcards, onlyModified=False):
 	command = ["git", "ls-files"]
@@ -120,8 +108,9 @@ def specificFilesCommand(files):
 
 
 
-# Processing functions
-# --------------------
+# == Processing functions ==
+
+# This is where the actual space trimming happens.
 
 def processFiles(files, listFilesCommand, debug=False):
 	sed = None
@@ -131,8 +120,8 @@ def processFiles(files, listFilesCommand, debug=False):
 		sed = subprocess.Popen([ 'cat' ], stdin=subprocess.PIPE)
 	else:
 		sys.stdout.write("Processing files")
-		# Don't remove the empty argument after -i as Mac OS X doesn't allow -i without parameter
-		# http://blog.mpdaugherty.com/2010/05/27/difference-with-sed-in-place-editing-on-mac-os-x-vs-linux/
+		# Don't remove the empty argument after -i
+		# [as Mac OS X doesn't allow -i without parameter](http://blog.mpdaugherty.com/2010/05/27/difference-with-sed-in-place-editing-on-mac-os-x-vs-linux/).
 		sed = subprocess.Popen([ 'xargs', 'sed', '-i', '', '-e', 's/[[:space:]]*$//' ], stdin=subprocess.PIPE)
 
 	while len(files) > 0:
@@ -146,8 +135,9 @@ def processFiles(files, listFilesCommand, debug=False):
 
 
 
-# User interaction functions
-# --------------------
+# == User interaction functions ==
+
+# These functions present the interactive dialogs to the user.
 
 def askProcessFiles(files, listFilesCommand):
 	options = {
@@ -157,7 +147,8 @@ def askProcessFiles(files, listFilesCommand):
 		'c': lambda a, b: lambdaPrint(b) or True,
 		'd': lambda a, b: (printDebug(a, b), processFiles(a, b, True)),
 		'q': lambda a, b: exit("Bye!"),
-		'?': None	# Handled in the eval-loop
+		# The ? is handled in the eval-loop, and thus doesn't need a callback function.
+		'?': None
 	}
 
 	choice = None
@@ -170,7 +161,7 @@ def askProcessFiles(files, listFilesCommand):
 			printProcessHelp()
 		else:
 			result = options[choice](files, listFilesCommand)
-			if result: # We continue the loop if the callback functions returns True
+			if result: # We continue the loop if the callback functions returns True.
 				choice = None
 
 
@@ -201,8 +192,9 @@ q - Abort execution
 
 
 
-# Script execution
-# ----------------
+# == Script execution ==
+
+# Here we decide which functions are actually invoked depending on input parameters.
 
 listFilesCommand = None
 
@@ -221,6 +213,7 @@ else:
 	listFilesCommand = findFilesCommand(sourceFileWildcards, recursive=args.recursive)
 
 
+# **Process those files!**
 files = subprocess.Popen(listFilesCommand, stdout=subprocess.PIPE).stdout.readlines()
 askProcessFiles(files, listFilesCommand)
 
