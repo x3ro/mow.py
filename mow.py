@@ -198,6 +198,9 @@ q - Abort execution
 
 listFilesCommand = None
 
+if args.wildcards != None:
+	sourceFileWildcards.extend(args.wildcards)
+
 if args.files != None:
 	listFilesCommand = specificFilesCommand(args.files)
 
