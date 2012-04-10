@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>mow.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  
+  <div class='section'>
+    <div class='docs'><h1>mow.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">argparse</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <h2><span id="script-configuration" href="script-configuration"> Script configuration </span></h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>TODO: Refactor this into a preferences file</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>We want to process files with these extensions.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">sourceFileWildcards</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&#39;*.java&#39;</span><span class="p">,</span> <span class="s">&#39;*.rb&#39;</span><span class="p">,</span> <span class="s">&#39;*.php&#39;</span><span class="p">,</span> <span class="s">&#39;*.js&#39;</span><span class="p">,</span> <span class="s">&#39;*.scala&#39;</span><span class="p">,</span> <span class="s">&#39;*.c&#39;</span><span class="p">,</span> <span class="s">&#39;*.cpp&#39;</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <h2><span id="command-line-options" href="command-line-options"> Command line options </span></h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">&#39;Remove trailing whitespaces from source files&#39;</span><span class="p">,</span> <span class="n">formatter_class</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">RawTextHelpFormatter</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <h4><span id="generic-options" href="generic-options"> Generic options </span></h4>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--debug&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;debug&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+					<span class="n">help</span><span class="o">=</span><span class="s">&#39;Enable debug mode&#39;</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--wildcard&#39;</span><span class="p">,</span> <span class="s">&#39;-w&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;wildcards&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;append&#39;</span><span class="p">,</span>
+					<span class="n">help</span><span class="o">=</span><span class="s">&#39;Add an additional wildcard for source-files to be processed&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <h4><span id="file-mode-options" href="file-mode-options"> File mode options </span></h4>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s">&#39;&quot;Specific files&quot;-mode&#39;</span><span class="p">)</span>
+<span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--files&#39;</span><span class="p">,</span> <span class="s">&#39;-f&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;files&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;FILE&#39;</span><span class="p">,</span>
+					<span class="n">help</span><span class="o">=</span><span class="s">&#39;Specifies files to be processed.&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <h4><span id="git-mode-options" href="git-mode-options"> Git mode options </span></h4>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s">&#39;Git-mode&#39;</span><span class="p">,</span> <span class="s">&#39;NOTE: Always operates recursively due to a limitation in git ls-files!&#39;</span><span class="p">)</span>
+<span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--force-git&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;forceGit&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
+<span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--not-only-modified&#39;</span><span class="p">,</span> <span class="s">&#39;-m&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;onlyModified&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_false&#39;</span><span class="p">,</span>
+					<span class="n">help</span><span class="o">=</span><span class="s">&#39;Process only files that have been modified&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <h4><span id="find-mode-options" href="find-mode-options"> Find mode options </span></h4>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s">&#39;Find-mode&#39;</span><span class="p">,</span> <span class="s">&#39;Find files to process using the &quot;find&quot;-command&#39;</span><span class="p">)</span>
+<span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--force-find&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;forceFind&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
+
+
+<span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--recursive&#39;</span><span class="p">,</span> <span class="s">&#39;-r&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;recursive&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <h2><span id="initialization" href="initialization"> Initialization </span></h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>Used to ignore subprocess output as explained
+<a href="http://mail.python.org/pipermail/python-dev/2006-June/066111.html">here</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">FNULL</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;/dev/null&#39;</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      <p>Are we currently in a directory under Git version control?
+<a href="http://stackoverflow.com/a/2044677/124257">(See Stackoverflow)</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">gitRevParse</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s">&quot;git&quot;</span><span class="p">,</span> <span class="s">&quot;rev-parse&quot;</span><span class="p">],</span> <span class="n">stdout</span><span class="o">=</span><span class="n">FNULL</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">FNULL</span><span class="p">)</span>
+<span class="n">gitRevParse</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<span class="n">inGitDir</span> <span class="o">=</span> <span class="n">gitRevParse</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <h2><span id="list-command-generation" href="list-command-generation"> List command generation </span></h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>These functions generate the shell commands that will be used to gather
+a the list of files that should be processed. Only one of them is called,
+depending on the mode <code>mow.py</code> is running in.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">gitLsFilesCommand</span><span class="p">(</span><span class="n">wildcards</span><span class="p">,</span> <span class="n">onlyModified</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;git&quot;</span><span class="p">,</span> <span class="s">&quot;ls-files&quot;</span><span class="p">]</span>
+
+	<span class="k">if</span> <span class="n">onlyModified</span><span class="p">:</span>
+		<span class="n">command</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;--modified&#39;</span><span class="p">)</span>
+
+	<span class="k">for</span> <span class="n">wildcard</span> <span class="ow">in</span> <span class="n">wildcards</span><span class="p">:</span>
+		<span class="n">command</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wildcard</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">command</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">findFilesCommand</span><span class="p">(</span><span class="n">wildcards</span><span class="p">,</span> <span class="n">paths</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;.&#39;</span><span class="p">],</span> <span class="n">recursive</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+	<span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;find&quot;</span><span class="p">]</span>
+	<span class="n">command</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+
+	<span class="n">command</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;-type&#39;</span><span class="p">,</span> <span class="s">&#39;f&#39;</span><span class="p">])</span>
+
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">recursive</span><span class="p">:</span>
+		<span class="n">command</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;-depth&#39;</span><span class="p">,</span> <span class="s">&#39;1&#39;</span><span class="p">])</span>
+
+	<span class="n">command</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;(&#39;</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">wildcard</span> <span class="ow">in</span> <span class="n">wildcards</span><span class="p">:</span>
+		<span class="n">command</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;-name&#39;</span><span class="p">,</span> <span class="n">wildcard</span><span class="p">,</span> <span class="s">&#39;-or&#39;</span><span class="p">])</span>
+
+	<span class="n">command</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="c"># Remove the dangling &quot;-or&quot; at the end</span>
+	<span class="n">command</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;)&#39;</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">command</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">specificFilesCommand</span><span class="p">(</span><span class="n">files</span><span class="p">):</span>
+	<span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;echo&#39;</span><span class="p">]</span>
+
+	<span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+		<span class="n">command</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">command</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <h2><span id="processing-functions" href="processing-functions"> Processing functions </span></h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>This is where the actual space trimming happens.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">processFiles</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">listFilesCommand</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+	<span class="n">sed</span> <span class="o">=</span> <span class="bp">None</span>
+
+	<span class="k">if</span><span class="p">(</span><span class="n">debug</span><span class="p">):</span>
+		<span class="k">print</span> <span class="s">&quot;Data that would be passed to sed:&quot;</span>
+		<span class="n">sed</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span> <span class="s">&#39;cat&#39;</span> <span class="p">],</span> <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;Processing files&quot;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      <p>Don't remove the empty argument after -i
+<a href="http://blog.mpdaugherty.com/2010/05/27/difference-with-sed-in-place-editing-on-mac-os-x-vs-linux/">as Mac OS X doesn't allow -i without parameter</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>		<span class="n">sed</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span> <span class="s">&#39;xargs&#39;</span><span class="p">,</span> <span class="s">&#39;sed&#39;</span><span class="p">,</span> <span class="s">&#39;-i&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;-e&#39;</span><span class="p">,</span> <span class="s">&#39;s/[[:space:]]*$//&#39;</span> <span class="p">],</span> <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+
+	<span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+		<span class="n">sed</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="n">pop</span><span class="p">())</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">debug</span><span class="p">:</span>
+			<span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">debug</span><span class="p">:</span>
+		<span class="k">print</span> <span class="s">&#39; Done!&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <h2><span id="user-interaction-functions" href="user-interaction-functions"> User interaction functions </span></h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      <p>These functions present the interactive dialogs to the user.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">askProcessFiles</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">listFilesCommand</span><span class="p">):</span>
+	<span class="n">options</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="s">&#39;y&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">processFiles</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+		<span class="s">&#39;n&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">exit</span><span class="p">(</span><span class="s">&quot;Bye!&quot;</span><span class="p">),</span>
+		<span class="s">&#39;f&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">lambdaPrint</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">True</span><span class="p">,</span>
+		<span class="s">&#39;c&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">lambdaPrint</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">True</span><span class="p">,</span>
+		<span class="s">&#39;d&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="p">(</span><span class="n">printDebug</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">),</span> <span class="n">processFiles</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="bp">True</span><span class="p">)),</span>
+		<span class="s">&#39;q&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">exit</span><span class="p">(</span><span class="s">&quot;Bye!&quot;</span><span class="p">),</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      <p>The ? is handled in the eval-loop, and thus doesn't need a callback function.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>		<span class="s">&#39;?&#39;</span><span class="p">:</span> <span class="bp">None</span>
+	<span class="p">}</span>
+
+	<span class="n">choice</span> <span class="o">=</span> <span class="bp">None</span>
+	<span class="k">while</span> <span class="n">choice</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\033</span><span class="s">[1;94m&quot;</span> <span class="o">+</span> <span class="s">&quot;About to process </span><span class="si">%d</span><span class="s"> files! Continue? [y,n,f,c,q,?] </span><span class="se">\033</span><span class="s">[0m&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">))</span>
+		<span class="n">choice</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">()</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">choice</span> <span class="ow">in</span> <span class="n">options</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">or</span> <span class="n">choice</span> <span class="o">==</span> <span class="s">&#39;?&#39;</span><span class="p">:</span>
+			<span class="n">choice</span> <span class="o">=</span> <span class="bp">None</span>
+			<span class="n">printProcessHelp</span><span class="p">()</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">result</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="n">choice</span><span class="p">](</span><span class="n">files</span><span class="p">,</span> <span class="n">listFilesCommand</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">result</span><span class="p">:</span> <span class="c"># We continue the loop if the callback functions returns True.</span>
+				<span class="n">choice</span> <span class="o">=</span> <span class="bp">None</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">lambdaPrint</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+	<span class="k">print</span> <span class="n">x</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">printDebug</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">listFilesCommand</span><span class="p">):</span>
+	<span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">Arguments as found by argparse:&quot;</span>
+	<span class="k">print</span> <span class="n">args</span>
+
+	<span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">Files to be processed:&quot;</span>
+	<span class="k">print</span> <span class="n">files</span>
+
+	<span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">Command that generated the file list:&quot;</span>
+	<span class="k">print</span> <span class="n">listFilesCommand</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">printProcessHelp</span><span class="p">():</span>
+	<span class="k">print</span> <span class="s">&quot;</span><span class="se">\033</span><span class="s">[1;91m&quot;</span> <span class="o">+</span> <span class="s">&quot;&quot;&quot;y - Start processing files</span>
+<span class="s">n - Abort execution, equivalent to &quot;q&quot;</span>
+<span class="s">f - List files to be processed</span>
+<span class="s">c - Show command used to generate the file list</span>
+<span class="s">d - Print debug information</span>
+<span class="s">q - Abort execution</span>
+<span class="s">? - Print help </span><span class="se">\033</span><span class="s">[0m&quot;&quot;&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      <h2><span id="script-execution" href="script-execution"> Script execution </span></h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-29'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-29'>#</a>
+      </div>
+      <p>Here we decide which functions are actually invoked depending on input parameters.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">listFilesCommand</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">wildcards</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+	<span class="n">sourceFileWildcards</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wildcards</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">files</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+	<span class="n">listFilesCommand</span> <span class="o">=</span> <span class="n">specificFilesCommand</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+
+<span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">forceGit</span><span class="p">:</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">recursive</span><span class="p">:</span>
+		<span class="nb">exit</span><span class="p">(</span><span class="s">&quot;Git-mode does not currently support non-recursive processing! Exiting.&quot;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">inGitDir</span><span class="p">:</span>
+		<span class="nb">exit</span><span class="p">(</span><span class="s">&quot;Not a git repository (or any of the parent directories)! Exiting.&quot;</span><span class="p">)</span>
+	<span class="n">listFilesCommand</span> <span class="o">=</span> <span class="n">gitLsFilesCommand</span><span class="p">(</span><span class="n">sourceFileWildcards</span><span class="p">,</span> <span class="n">onlyModified</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">onlyModified</span><span class="p">)</span>
+
+<span class="k">else</span><span class="p">:</span>
+	<span class="n">listFilesCommand</span> <span class="o">=</span> <span class="n">findFilesCommand</span><span class="p">(</span><span class="n">sourceFileWildcards</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">recursive</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-30'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-30'>#</a>
+      </div>
+      <p><strong>Process those files!</strong></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">files</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">listFilesCommand</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+<span class="n">askProcessFiles</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">listFilesCommand</span><span class="p">)</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  
+</div>
+</body>
