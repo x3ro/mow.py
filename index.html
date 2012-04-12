@@ -60,7 +60,7 @@
       <p>We want to process files with these extensions.</p>
     </div>
     <div class='code'>
-      <div class="highlight"><pre><span class="n">sourceFileWildcards</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&#39;*.java&#39;</span><span class="p">,</span> <span class="s">&#39;*.rb&#39;</span><span class="p">,</span> <span class="s">&#39;*.php&#39;</span><span class="p">,</span> <span class="s">&#39;*.js&#39;</span><span class="p">,</span> <span class="s">&#39;*.scala&#39;</span><span class="p">,</span> <span class="s">&#39;*.c&#39;</span><span class="p">,</span> <span class="s">&#39;*.cpp&#39;</span><span class="p">]</span></pre></div>
+      <div class="highlight"><pre><span class="n">sourceFileExtensions</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&#39;java&#39;</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">,</span> <span class="s">&#39;php&#39;</span><span class="p">,</span> <span class="s">&#39;js&#39;</span><span class="p">,</span> <span class="s">&#39;scala&#39;</span><span class="p">,</span> <span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;cpp&#39;</span><span class="p">,</span> <span class="s">&#39;py&#39;</span><span class="p">]</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -86,8 +86,8 @@
     <div class='code'>
       <div class="highlight"><pre><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--debug&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;debug&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
 					<span class="n">help</span><span class="o">=</span><span class="s">&#39;Enable debug mode&#39;</span><span class="p">)</span>
-<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--wildcard&#39;</span><span class="p">,</span> <span class="s">&#39;-w&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;wildcards&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;append&#39;</span><span class="p">,</span>
-					<span class="n">help</span><span class="o">=</span><span class="s">&#39;Add an additional wildcard for source-files to be processed&#39;</span><span class="p">)</span></pre></div>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--ext&#39;</span><span class="p">,</span> <span class="s">&#39;-e&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;extensions&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;append&#39;</span><span class="p">,</span>
+					<span class="n">help</span><span class="o">=</span><span class="s">&#39;Add an additional file extension that should be processed&#39;</span><span class="p">)</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -100,7 +100,7 @@
     </div>
     <div class='code'>
       <div class="highlight"><pre><span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s">&#39;&quot;Specific files&quot;-mode&#39;</span><span class="p">)</span>
-<span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--files&#39;</span><span class="p">,</span> <span class="s">&#39;-f&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;files&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;FILE&#39;</span><span class="p">,</span>
+<span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;files&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;FILE&#39;</span><span class="p">,</span>
 					<span class="n">help</span><span class="o">=</span><span class="s">&#39;Specifies files to be processed.&#39;</span><span class="p">)</span></pre></div>
     </div>
   </div>
@@ -260,10 +260,11 @@ depending on the mode <code>mow.py</code> is running in.</p>
     </div>
     <div class='code'>
       <div class="highlight"><pre><span class="k">def</span> <span class="nf">specificFilesCommand</span><span class="p">(</span><span class="n">files</span><span class="p">):</span>
-	<span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;echo&#39;</span><span class="p">]</span>
+	<span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;printf&#39;</span><span class="p">]</span>
 
+	<span class="n">filesString</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
 	<span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
-		<span class="n">command</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>
+		<span class="n">filesString</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">file</span>
 
 	<span class="k">return</span> <span class="n">command</span></pre></div>
     </div>
@@ -372,7 +373,7 @@ depending on the mode <code>mow.py</code> is running in.</p>
 		<span class="s">&#39;n&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">exit</span><span class="p">(</span><span class="s">&quot;Bye!&quot;</span><span class="p">),</span>
 		<span class="s">&#39;f&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">lambdaPrint</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">True</span><span class="p">,</span>
 		<span class="s">&#39;c&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">lambdaPrint</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">True</span><span class="p">,</span>
-		<span class="s">&#39;d&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="p">(</span><span class="n">printDebug</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">),</span> <span class="n">processFiles</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="bp">True</span><span class="p">)),</span>
+		<span class="s">&#39;d&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">printDebug</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">True</span><span class="p">,</span>
 		<span class="s">&#39;q&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">exit</span><span class="p">(</span><span class="s">&quot;Bye!&quot;</span><span class="p">),</span></pre></div>
     </div>
   </div>
@@ -472,15 +473,26 @@ depending on the mode <code>mow.py</code> is running in.</p>
       <div class='octowrap'>
         <a class='octothorpe' href='#section-29'>#</a>
       </div>
-      <p>Here we decide which functions are actually invoked depending on input parameters.</p>
+      <p>Generate wildcards from the extensions that should be processed</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">extensions</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+	<span class="n">sourceFileExtensions</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">extensions</span><span class="p">)</span>
+
+<span class="n">sourceFileWildcards</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&quot;*.</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">sourceFileExtensions</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-30'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-30'>#</a>
+      </div>
+      <p>This is where we decide which functions are actually invoked depending on input parameters.</p>
     </div>
     <div class='code'>
       <div class="highlight"><pre><span class="n">listFilesCommand</span> <span class="o">=</span> <span class="bp">None</span>
-
-<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">wildcards</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
-	<span class="n">sourceFileWildcards</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wildcards</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">files</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">files</span> <span class="o">!=</span> <span class="bp">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 	<span class="n">listFilesCommand</span> <span class="o">=</span> <span class="n">specificFilesCommand</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
 
 <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">forceGit</span><span class="p">:</span>
@@ -496,10 +508,10 @@ depending on the mode <code>mow.py</code> is running in.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-30'>
+  <div class='section' id='section-31'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-30'>#</a>
+        <a class='octothorpe' href='#section-31'>#</a>
       </div>
       <p><strong>Process those files!</strong></p>
     </div>
