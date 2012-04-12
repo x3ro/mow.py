@@ -146,7 +146,7 @@ def askProcessFiles(files, listFilesCommand):
 		'n': lambda a, b: exit("Bye!"),
 		'f': lambda a, b: lambdaPrint(a) or True,
 		'c': lambda a, b: lambdaPrint(b) or True,
-		'd': lambda a, b: (printDebug(a, b), processFiles(a, b, True)),
+		'd': lambda a, b: printDebug(a, b) or True,
 		'q': lambda a, b: exit("Bye!"),
 		# The ? is handled in the eval-loop, and thus doesn't need a callback function.
 		'?': None
