@@ -10,7 +10,7 @@ import argparse
 # TODO: Refactor this into a preferences file
 
 # We want to process files with these extensions.
-sourceFileWildcards = [ '*.java', '*.rb', '*.php', '*.js', '*.scala', '*.c', '*.cpp']
+sourceFileExtensions = [ 'java', 'rb', 'php', 'js', 'scala', 'c', 'cpp']
 
 
 
@@ -21,8 +21,8 @@ parser = argparse.ArgumentParser(description='Remove trailing whitespaces from s
 # ==== Generic options ====
 parser.add_argument('--debug', dest='debug', action='store_true',
 					help='Enable debug mode')
-parser.add_argument('--wildcard', '-w', dest='wildcards', action='append',
-					help='Add an additional wildcard for source-files to be processed')
+parser.add_argument('--ext', '-e', dest='extensions', action='append',
+					help='Add an additional file extension that should be processed')
 
 # ==== File mode options ====
 group = parser.add_argument_group('"Specific files"-mode')
@@ -194,13 +194,15 @@ q - Abort execution
 
 # == Script execution ==
 
-# Here we decide which functions are actually invoked depending on input parameters.
+# Generate wildcards from the extensions that should be processed
+if args.extensions != None:
+	sourceFileExtensions.extend(args.extensions)
 
+sourceFileWildcards = [ "*.%s" % x for x in sourceFileExtensions]
+
+
+# This is where we decide which functions are actually invoked depending on input parameters.
 listFilesCommand = None
-
-if args.wildcards != None:
-	sourceFileWildcards.extend(args.wildcards)
-
 if args.files != None:
 	listFilesCommand = specificFilesCommand(args.files)
 

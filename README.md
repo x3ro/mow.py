@@ -23,7 +23,7 @@ If you installed the git command, you can also do the following:
 
 	git mow		# Process all modified files matching the predefined wildcards
 	git mow -m	# Process all files matching the predefined wildcards
-	git mow -w \*.pl -w \*.mmd # Process all files matching the predefine wildcards and *.pl and *.mmd
+	git mow -e pl -e mmd # Process all files matching the predefined extensions and pl and mmd
 
 
 # Bugs and improvements
