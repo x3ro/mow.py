@@ -100,13 +100,13 @@ def findFilesCommand(wildcards, paths=['.'], recursive=True):
 
 
 def specificFilesCommand(files):
-	command = ['echo']
+	command = ['printf']
 
+	filesString = ""
 	for file in files:
-		command.append(file)
+		filesString += "%s\n" % file
 
 	return command
-
 
 
 # == Processing functions ==
