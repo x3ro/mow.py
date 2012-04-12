@@ -3,6 +3,8 @@
 Mow.py is a small python script that shall assist you in your quest to achieve
 trailing-space-free code.
 
+**Mow.py is under development and should be considered alpha and has not been
+extensively tested! Use with caution.**
 
 # Installation
 
