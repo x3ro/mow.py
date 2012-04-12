@@ -24,9 +24,10 @@ parser.add_argument('--debug', dest='debug', action='store_true',
 parser.add_argument('--ext', '-e', dest='extensions', action='append',
 					help='Add an additional file extension that should be processed')
 
+
 # ==== File mode options ====
 group = parser.add_argument_group('"Specific files"-mode')
-group.add_argument('--files', '-f', dest='files', nargs='+', metavar='FILE',
+group.add_argument('files', nargs='*', metavar='FILE',
 					help='Specifies files to be processed.')
 
 # ==== Git mode options ====
