@@ -204,7 +204,7 @@ sourceFileWildcards = [ "*.%s" % x for x in sourceFileExtensions]
 
 # This is where we decide which functions are actually invoked depending on input parameters.
 listFilesCommand = None
-if args.files != None:
+if args.files != None and len(args.files) > 0:
 	listFilesCommand = specificFilesCommand(args.files)
 
 elif args.forceGit:
